@@ -1,9 +1,7 @@
 package org.sagebionetworks.url;
 
-import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.Iterator;
@@ -14,7 +12,6 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.commons.codec.binary.Hex;
-import org.junit.runners.ParentRunner;
 
 public class UrlSignerUtils {
 
@@ -41,10 +38,9 @@ public class UrlSignerUtils {
 	 * @return
 	 * @throws MalformedURLException
 	 */
-	public static String generateSignature(HttpMethod method, String url,
-			String signatureParameterName, String credentials) throws MalformedURLException {
+	public static String generateSignature(HttpMethod method, String url, String credentials) throws MalformedURLException {
 		UrlData urlData = new UrlData(url);
-		return generateSignature(method, urlData, signatureParameterName, credentials);
+		return generateSignature(method, urlData, credentials);
 	}
 
 
@@ -61,14 +57,11 @@ public class UrlSignerUtils {
 	 * @throws MalformedURLException
 	 * @throws NoSuchAlgorithmException
 	 */
-	public static String generateSignature(HttpMethod method, UrlData urlData,
-			String signatureParameterName, String credentials) throws MalformedURLException {
+	public static String generateSignature(HttpMethod method, UrlData urlData, String credentials) throws MalformedURLException {
 		// First parse the URL
-		String canonicalForm = makeS3CanonicalString(method, urlData, signatureParameterName);
-		// Hash the canonical form to normalize the length of the signed data.
-		byte[] hash = sha256Hash(canonicalForm);
+		String canonicalForm = makeS3CanonicalString(method, urlData);
 		// Sign the hash.
-		byte[] signature = sign(hash, credentials);
+		byte[] signature = sign(canonicalForm, credentials);
 		// hex encode the signature.
 		return Hex.encodeHexString(signature);
 	}
@@ -95,7 +88,7 @@ public class UrlSignerUtils {
 			urlData.getQueryParameters().put(EXPIRATION, ""+expiration.getTime());
 		}
 		// Generate the signature of the for the 
-		String signature = generateSignature(method, urlData, HMAC_SIGNATURE, credentials);
+		String signature = generateSignature(method, urlData, credentials);
 		// Add the signature to the URL
 		urlData.getQueryParameters().put(HMAC_SIGNATURE, signature);
 		return urlData.toURL();
@@ -109,10 +102,9 @@ public class UrlSignerUtils {
 	 * @return
 	 * @throws MalformedURLException
 	 */
-	public static String makeS3CanonicalString(HttpMethod method, String url,
-			String signatureName) throws MalformedURLException {
+	public static String makeS3CanonicalString(HttpMethod method, String url) throws MalformedURLException {
 		UrlData urlData = new UrlData(url);
-		return makeS3CanonicalString(method, urlData, signatureName);
+		return makeS3CanonicalString(method, urlData);
 	}
 	
 	/**
@@ -123,16 +115,14 @@ public class UrlSignerUtils {
 	 * @return
 	 * @throws MalformedURLException
 	 */
-	public static String makeS3CanonicalString(HttpMethod method, UrlData urlData, String signatureParameter) throws MalformedURLException{
+	public static String makeS3CanonicalString(HttpMethod method, UrlData urlData) throws MalformedURLException{
 		if(method == null){
 			throw new IllegalArgumentException("Method cannot be null");
 		}
 		// First parse the URL
 		TreeMap<String, String> sortedTree = new TreeMap<String, String>(urlData.getQueryParameters());
 		// The signature parameter must not be included in the signature.
-		if(signatureParameter != null){
-			sortedTree.remove(signatureParameter);
-		}
+		sortedTree.remove(HMAC_SIGNATURE);
 		// Build up the string from the parts
 		StringBuilder builder = new StringBuilder();
 		builder.append(method.toString());
@@ -158,24 +148,6 @@ public class UrlSignerUtils {
 		return builder.toString();
 	}
 
-	/**
-	 * Generate the SHA-256 hash of the given text.
-	 * 
-	 * @param text
-	 * @return
-	 */
-	public static byte[] sha256Hash(String text) {
-		try {
-			MessageDigest md = MessageDigest.getInstance(SHA_256);
-			md.update(text.getBytes(UTF_8));
-			return md.digest();
-		} catch (NoSuchAlgorithmException e) {
-			throw new RuntimeException(e);
-		} catch (UnsupportedEncodingException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
 
 	/**
 	 * Generate a keyed-hash message authentication code (HMAC) using HMAC-SHA1
@@ -184,11 +156,15 @@ public class UrlSignerUtils {
 	 * @param keyString
 	 * @return
 	 */
-	public static byte[] sign(byte[] data, String credentials) {
+	public static byte[] sign(String dataToSign, String credentials) {
+		if(dataToSign == null){
+			throw new IllegalArgumentException("Data cannot be null");
+		}
 		if(credentials == null){
 			throw new IllegalArgumentException("Credentials cannot be null");
 		}
 		try {
+			byte[] data = dataToSign.getBytes(UTF_8);
 			byte[] key = credentials.getBytes(UTF_8);
 			Mac mac = Mac.getInstance(HMAC_SHA1);
 			mac.init(new SecretKeySpec(key, HMAC_SHA1));
@@ -206,13 +182,14 @@ public class UrlSignerUtils {
 	 * @param url
 	 * @param credentials
 	 * @throws MalformedURLException 
+	 * @throws SignatureExpiredException 
 	 */
-	public static void validatePresignedURL(HttpMethod method, String url, String credentials) throws MalformedURLException, SignatureMismatchException{
+	public static void validatePresignedURL(HttpMethod method, String url, String credentials) throws MalformedURLException, SignatureMismatchException, SignatureExpiredException{
 		UrlData urlData = new UrlData(url);
 		LinkedHashMap<String, String> parameters = urlData.getQueryParameters();
 		String signature = parameters.get(HMAC_SIGNATURE);
 		if(signature == null){
-			throw new IllegalArgumentException("Signature is missing");
+			throw new SignatureMismatchException("Signature is missing");
 		}
 		String expiresString = parameters.get(EXPIRATION);
 		if(expiresString != null){
@@ -220,14 +197,14 @@ public class UrlSignerUtils {
 				long expires = Long.parseLong(expiresString);
 				long now = System.currentTimeMillis();
 				if(now > expires){
-					throw new SignatureMismatchException("Pre-signed URL has expired");
+					throw new SignatureExpiredException("Pre-signed URL has expired");
 				}
 			} catch (NumberFormatException e) {
 				throw new IllegalArgumentException("Unknown format of "+EXPIRATION+" parameter: "+expiresString);
 			}
 		}
 		// Calculate the signature of the passed url
-		String calculatedSignature = generateSignature(method, urlData, HMAC_SIGNATURE, credentials);
+		String calculatedSignature = generateSignature(method, urlData, credentials);
 		if(!calculatedSignature.equals(signature)){
 			throw new SignatureMismatchException("The pre-signed URL signature does not match");
 		}

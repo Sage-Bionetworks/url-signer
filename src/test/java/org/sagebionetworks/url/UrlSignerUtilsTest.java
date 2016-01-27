@@ -1,7 +1,8 @@
 package org.sagebionetworks.url;
 
-import static org.junit.Assert.*;
-
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.sagebionetworks.url.UrlSignerUtils.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
@@ -16,7 +17,7 @@ public class UrlSignerUtilsTest {
 		HttpMethod method = HttpMethod.POST;
 		// All of these urls should generate the same canonical form.
 		String[] urls = new String[] {
-				"https://host.org/path/child?z=one&a=two&signature=abc",
+				"https://host.org/path/child?z=one&a=two&"+HMAC_SIGNATURE+"=abc",
 				"http://host.org/path/child?z=one&a=two",
 				"http://host.org/path/child?a=two&z=one",
 				"http://host.org/path/child?a=two&z=one#refs",
@@ -26,7 +27,7 @@ public class UrlSignerUtilsTest {
 		String expectedResult = "POST host.org /path/child?a=two&z=one";
 		for (String url : urls) {
 			String canonical = UrlSignerUtils.makeS3CanonicalString(method,
-					url, "signature");
+					url);
 			assertEquals(expectedResult, canonical);
 		}
 	}
@@ -37,7 +38,7 @@ public class UrlSignerUtilsTest {
 		String url = "http://localhost:8080/foo/bar#refs";
 		String expectedResult = "GET localhost /foo/bar";
 		String canonical = UrlSignerUtils.makeS3CanonicalString(method,
-				url, "signature");
+				url);
 		assertEquals(expectedResult, canonical);
 	}
 	
@@ -48,7 +49,7 @@ public class UrlSignerUtilsTest {
 		String expectedResult = "GET localhost /foo/bar";
 		String signatureName = null;
 		String canonical = UrlSignerUtils.makeS3CanonicalString(method,
-				url, signatureName);
+				url);
 		assertEquals(expectedResult, canonical);
 	}
 	
@@ -58,7 +59,7 @@ public class UrlSignerUtilsTest {
 		String url = "http://somehost.net/foo/bar?bar=";
 		String expectedResult = "PUT somehost.net /foo/bar?bar=";
 		String canonical = UrlSignerUtils.makeS3CanonicalString(method,
-				url, "signature");
+				url);
 		assertEquals(expectedResult, canonical);
 	}
 	
@@ -68,9 +69,9 @@ public class UrlSignerUtilsTest {
 		String signatureParameterName = "signature";
 		HttpMethod method = HttpMethod.PUT;
 		String url = "http://somehost.net/foo/bar?z=one&a=two&expires=123456";
-		String signature = UrlSignerUtils.generateSignature(method, url, signatureParameterName, credentials);
+		String signature = UrlSignerUtils.generateSignature(method, url, credentials);
 		assertNotNull(signature);
-		String expected = "38021c71c349926cff566b41a1fbc1e4bbe7a6e7";
+		String expected = "48139b9703f5f63979b5197db309ec3d09a44ae8";
 		assertEquals(expected, signature);
 	}
 
@@ -82,7 +83,7 @@ public class UrlSignerUtilsTest {
 		String url = "https://synapse.org/root/folder";
 		URL presigned = UrlSignerUtils.generatePreSignedURL(method, url, expires, credentials);
 		assertNotNull(presigned);
-		String expectedUrl = "https://synapse.org/root/folder?expiration=123&hmacSignature=932e432399b7761e9447b881462fb257a9f0b9fe";
+		String expectedUrl = "https://synapse.org/root/folder?expiration=123&hmacSignature=0736be68b7cfbee8313ed0cc10e612954c8125fc";
 		assertEquals(expectedUrl, presigned.toString());
 	}
 	
@@ -94,7 +95,7 @@ public class UrlSignerUtilsTest {
 		String url = "http://synapse.org?foo.bar";
 		URL presigned = UrlSignerUtils.generatePreSignedURL(method, url, expires, credentials);
 		assertNotNull(presigned);
-		String expectedUrl = "http://synapse.org?foo.bar=&hmacSignature=3227e3058d877c158aadf8d7bd08a547d3aa15cc";
+		String expectedUrl = "http://synapse.org?foo.bar=&hmacSignature=2ac8f03a055b3ce3d14852fe0403e1c8855a22e1";
 		assertEquals(expectedUrl, presigned.toString());
 	}
 	
@@ -129,7 +130,7 @@ public class UrlSignerUtilsTest {
 	}
 	
 	@Test
-	public void testValidatePresignedURL() throws MalformedURLException, SignatureMismatchException{
+	public void testValidatePresignedURL() throws Exception {
 		HttpMethod method = HttpMethod.GET;
 		String credentials = "a super secret password";
 		Date expires = new Date(System.currentTimeMillis()+(30*1000));
@@ -141,7 +142,7 @@ public class UrlSignerUtilsTest {
 	}
 	
 	@Test
-	public void testValidatePresignedURLNoExpires() throws MalformedURLException, SignatureMismatchException{
+	public void testValidatePresignedURLNoExpires() throws Exception{
 		HttpMethod method = HttpMethod.GET;
 		String credentials = "a super secret password";
 		Date expires = null;
@@ -151,8 +152,8 @@ public class UrlSignerUtilsTest {
 		UrlSignerUtils.validatePresignedURL(method, presignedUrl.toString(), credentials);
 	}
 	
-	@Test (expected=SignatureMismatchException.class)
-	public void testValidatePresignedURLExpired() throws MalformedURLException, SignatureMismatchException{
+	@Test (expected=SignatureExpiredException.class)
+	public void testValidatePresignedURLExpired() throws Exception{
 		HttpMethod method = HttpMethod.GET;
 		String credentials = "a super secret password";
 		//expired long ago
@@ -165,7 +166,7 @@ public class UrlSignerUtilsTest {
 	}
 	
 	@Test (expected=SignatureMismatchException.class)
-	public void testValidatePresignedURLMismatch() throws MalformedURLException, SignatureMismatchException{
+	public void testValidatePresignedURLMismatch() throws Exception{
 		HttpMethod method = HttpMethod.GET;
 		String credentials = "a super secret password";
 		Date expires = new Date(System.currentTimeMillis()+(30*1000));
@@ -178,22 +179,14 @@ public class UrlSignerUtilsTest {
 		// this should be valid
 		UrlSignerUtils.validatePresignedURL(method, preUrl, credentials);
 	}
+
 	
 	@Test (expected=IllegalArgumentException.class)
-	public void testValidatePresignedURLSignatureMissing() throws MalformedURLException, SignatureMismatchException{
-		HttpMethod method = HttpMethod.GET;
-		String credentials = "a super secret password";
-		String url = "http://synapse.org?param1=one&a=two";
-		// this should be valid
-		UrlSignerUtils.validatePresignedURL(method, url, credentials);
-	}
-	
-	@Test (expected=IllegalArgumentException.class)
-	public void testValidatePresignedURLExpiresFormat() throws MalformedURLException, SignatureMismatchException{
+	public void testValidatePresignedURLExpiresFormat() throws Exception {
 		HttpMethod method = HttpMethod.GET;
 		String credentials = "a super secret password";
 		Date expires = null;
-		String url = "http://synapse.org?"+UrlSignerUtils.EXPIRATION+"=notADate";
+		String url = "http://synapse.org?"+EXPIRATION+"=notADate";
 		URL presignedUrl = UrlSignerUtils.generatePreSignedURL(method, url, expires, credentials);
 		// this should be valid
 		UrlSignerUtils.validatePresignedURL(method, presignedUrl.toString(), credentials);
