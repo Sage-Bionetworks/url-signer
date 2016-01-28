@@ -55,7 +55,7 @@ public class UrlData {
 				}
 				String key = split[0];
 				if ("".equals(key)) {
-					break;
+					continue;
 				}
 				String value = "";
 				if (split.length > 1) {
