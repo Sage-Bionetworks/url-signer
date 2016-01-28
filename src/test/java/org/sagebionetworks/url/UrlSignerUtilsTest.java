@@ -41,17 +41,7 @@ public class UrlSignerUtilsTest {
 				url);
 		assertEquals(expectedResult, canonical);
 	}
-	
-	@Test
-	public void testMakeS3CanonicalStringSignatrueNull() throws MalformedURLException{
-		HttpMethod method = HttpMethod.GET;
-		String url = "http://localhost:8080/foo/bar#refs";
-		String expectedResult = "GET localhost /foo/bar";
-		String signatureName = null;
-		String canonical = UrlSignerUtils.makeS3CanonicalString(method,
-				url);
-		assertEquals(expectedResult, canonical);
-	}
+
 	
 	@Test
 	public void testMakeS3CanonicalStringOneParams() throws MalformedURLException{

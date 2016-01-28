@@ -36,6 +36,24 @@ public class UrlDataTest {
 		assertEquals("value=?&", map.get("key1"));
 		assertEquals("value2/:{}[]|@", map.get("key2"));
 	}
+	
+	@Test
+	public void testParseQueryStringWithEmptyValue() {
+		String queryString = "key1=&key2=two";
+		LinkedHashMap<String, String> map = UrlData
+				.parseQueryString(queryString);
+		assertNotNull(map);
+		assertEquals("", map.get("key1"));
+		assertEquals("two", map.get("key2"));
+	}
+	@Test
+	public void testParseQueryStringNoKey() {
+		String queryString = "=one&key2=two";
+		LinkedHashMap<String, String> map = UrlData
+				.parseQueryString(queryString);
+		assertNotNull(map);
+		assertEquals("two", map.get("key2"));
+	}
 
 	@Test
 	public void testParseQueryStringNull() {
