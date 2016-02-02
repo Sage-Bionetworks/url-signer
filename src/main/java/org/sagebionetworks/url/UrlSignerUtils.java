@@ -15,6 +15,9 @@ import org.apache.commons.codec.binary.Hex;
 
 public class UrlSignerUtils {
 
+	public static final String MSG_SIGNATURE_MISSING = "Signature is missing";
+	public static final String MSG_URL_EXPIRED = "Pre-signed URL has expired";
+	public static final String MSG_SIGNATURE_DOES_NOT_MATCH = "The pre-signed URL signature does not match";
 	/**
 	 * The parameter name used for an HMAC signature.
 	 */
@@ -189,7 +192,7 @@ public class UrlSignerUtils {
 		LinkedHashMap<String, String> parameters = urlData.getQueryParameters();
 		String signature = parameters.get(HMAC_SIGNATURE);
 		if(signature == null){
-			throw new SignatureMismatchException("Signature is missing");
+			throw new SignatureMismatchException(MSG_SIGNATURE_MISSING);
 		}
 		String expiresString = parameters.get(EXPIRATION);
 		if(expiresString != null){
@@ -197,7 +200,7 @@ public class UrlSignerUtils {
 				long expires = Long.parseLong(expiresString);
 				long now = System.currentTimeMillis();
 				if(now > expires){
-					throw new SignatureExpiredException("Pre-signed URL has expired");
+					throw new SignatureExpiredException(MSG_URL_EXPIRED);
 				}
 			} catch (NumberFormatException e) {
 				throw new IllegalArgumentException("Unknown format of "+EXPIRATION+" parameter: "+expiresString);
@@ -206,7 +209,7 @@ public class UrlSignerUtils {
 		// Calculate the signature of the passed url
 		String calculatedSignature = generateSignature(method, urlData, credentials);
 		if(!calculatedSignature.equals(signature)){
-			throw new SignatureMismatchException("The pre-signed URL signature does not match");
+			throw new SignatureMismatchException(MSG_SIGNATURE_DOES_NOT_MATCH);
 		}
  	}
 }
