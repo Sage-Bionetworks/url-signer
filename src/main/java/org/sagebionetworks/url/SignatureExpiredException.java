@@ -3,25 +3,28 @@ package org.sagebionetworks.url;
 public class SignatureExpiredException extends Exception {
 
 	private static final long serialVersionUID = 1L;
+	
+	private String signature;
 
 	public SignatureExpiredException() {
 	}
 
-	public SignatureExpiredException(String message) {
+	/**
+	 * Create a new Exception with the message and signature.
+	 * @param message
+	 * @param signature
+	 */
+	public SignatureExpiredException(String message, String signature) {
 		super(message);
+		this.signature = signature;
 	}
 
-	public SignatureExpiredException(Throwable cause) {
-		super(cause);
-	}
-
-	public SignatureExpiredException(String message, Throwable cause) {
-		super(message, cause);
-	}
-
-	public SignatureExpiredException(String message, Throwable cause,
-			boolean enableSuppression, boolean writableStackTrace) {
-		super(message, cause, enableSuppression, writableStackTrace);
+	/**
+	 * The expired signagure.
+	 * @return
+	 */
+	public String getSignature() {
+		return signature;
 	}
 
 }

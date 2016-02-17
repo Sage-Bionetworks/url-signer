@@ -200,7 +200,7 @@ public class UrlSignerUtils {
 				long expires = Long.parseLong(expiresString);
 				long now = System.currentTimeMillis();
 				if(now > expires){
-					throw new SignatureExpiredException(MSG_URL_EXPIRED);
+					throw new SignatureExpiredException(MSG_URL_EXPIRED, signature);
 				}
 			} catch (NumberFormatException e) {
 				throw new IllegalArgumentException("Unknown format of "+EXPIRATION+" parameter: "+expiresString);
