@@ -128,7 +128,8 @@ public class UrlSignerUtilsTest {
 		
 		URL presignedUrl = UrlSignerUtils.generatePreSignedURL(method, url, expires, credentials);
 		// this should be valid
-		UrlSignerUtils.validatePresignedURL(method, presignedUrl.toString(), credentials);
+		String signature = UrlSignerUtils.validatePresignedURL(method, presignedUrl.toString(), credentials);
+		assertNotNull(signature);
 	}
 	
 	@Test
