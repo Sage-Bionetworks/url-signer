@@ -187,7 +187,7 @@ public class UrlSignerUtils {
 	 * @throws MalformedURLException 
 	 * @throws SignatureExpiredException 
 	 */
-	public static void validatePresignedURL(HttpMethod method, String url, String credentials) throws MalformedURLException, SignatureMismatchException, SignatureExpiredException{
+	public static String validatePresignedURL(HttpMethod method, String url, String credentials) throws MalformedURLException, SignatureMismatchException, SignatureExpiredException{
 		UrlData urlData = new UrlData(url);
 		LinkedHashMap<String, String> parameters = urlData.getQueryParameters();
 		String signature = parameters.get(HMAC_SIGNATURE);
@@ -200,7 +200,7 @@ public class UrlSignerUtils {
 				long expires = Long.parseLong(expiresString);
 				long now = System.currentTimeMillis();
 				if(now > expires){
-					throw new SignatureExpiredException(MSG_URL_EXPIRED);
+					throw new SignatureExpiredException(MSG_URL_EXPIRED, signature);
 				}
 			} catch (NumberFormatException e) {
 				throw new IllegalArgumentException("Unknown format of "+EXPIRATION+" parameter: "+expiresString);
@@ -211,5 +211,7 @@ public class UrlSignerUtils {
 		if(!calculatedSignature.equals(signature)){
 			throw new SignatureMismatchException(MSG_SIGNATURE_DOES_NOT_MATCH);
 		}
+		// return the valid signature
+		return signature;
  	}
 }

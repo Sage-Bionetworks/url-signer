@@ -1,8 +1,8 @@
 package org.sagebionetworks.url;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 import static org.sagebionetworks.url.UrlSignerUtils.*;
+
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
@@ -128,7 +128,8 @@ public class UrlSignerUtilsTest {
 		
 		URL presignedUrl = UrlSignerUtils.generatePreSignedURL(method, url, expires, credentials);
 		// this should be valid
-		UrlSignerUtils.validatePresignedURL(method, presignedUrl.toString(), credentials);
+		String signature = UrlSignerUtils.validatePresignedURL(method, presignedUrl.toString(), credentials);
+		assertNotNull(signature);
 	}
 	
 	@Test
@@ -142,7 +143,7 @@ public class UrlSignerUtilsTest {
 		UrlSignerUtils.validatePresignedURL(method, presignedUrl.toString(), credentials);
 	}
 	
-	@Test (expected=SignatureExpiredException.class)
+	@Test
 	public void testValidatePresignedURLExpired() throws Exception{
 		HttpMethod method = HttpMethod.GET;
 		String credentials = "a super secret password";
@@ -152,7 +153,13 @@ public class UrlSignerUtilsTest {
 		
 		URL presignedUrl = UrlSignerUtils.generatePreSignedURL(method, url, expires, credentials);
 		// this should be valid
-		UrlSignerUtils.validatePresignedURL(method, presignedUrl.toString(), credentials);
+		try {
+			UrlSignerUtils.validatePresignedURL(method, presignedUrl.toString(), credentials);
+			fail("Exception should be thrown");
+		} catch (SignatureExpiredException e) {
+			assertEquals(MSG_URL_EXPIRED, e.getMessage());
+			assertEquals("d1f4e8e13dd941010278dd6c973be3510921709f", e.getSignature());
+		}
 	}
 	
 	@Test (expected=SignatureMismatchException.class)
