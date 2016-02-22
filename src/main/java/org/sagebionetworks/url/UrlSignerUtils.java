@@ -194,6 +194,12 @@ public class UrlSignerUtils {
 		if(signature == null){
 			throw new SignatureMismatchException(MSG_SIGNATURE_MISSING);
 		}
+		// Calculate the signature of the passed url
+		String calculatedSignature = generateSignature(method, urlData, credentials);
+		if(!calculatedSignature.equals(signature)){
+			throw new SignatureMismatchException(MSG_SIGNATURE_DOES_NOT_MATCH);
+		}
+		// Is the URL expired?
 		String expiresString = parameters.get(EXPIRATION);
 		if(expiresString != null){
 			try {
@@ -205,11 +211,6 @@ public class UrlSignerUtils {
 			} catch (NumberFormatException e) {
 				throw new IllegalArgumentException("Unknown format of "+EXPIRATION+" parameter: "+expiresString);
 			}
-		}
-		// Calculate the signature of the passed url
-		String calculatedSignature = generateSignature(method, urlData, credentials);
-		if(!calculatedSignature.equals(signature)){
-			throw new SignatureMismatchException(MSG_SIGNATURE_DOES_NOT_MATCH);
 		}
 		// return the valid signature
 		return signature;

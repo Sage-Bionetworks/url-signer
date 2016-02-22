@@ -162,6 +162,26 @@ public class UrlSignerUtilsTest {
 		}
 	}
 	
+	/**
+	 * If a URL is expired and mismatched, must throw a SignatureMismatchException and not SignatureExpiredException.
+	 * @throws Exception
+	 */
+	@Test (expected=SignatureMismatchException.class)
+	public void testValidatePresignedURLExpiredAndMismatched() throws Exception{
+		HttpMethod method = HttpMethod.GET;
+		String credentials = "a super secret password";
+		//expired long ago
+		Date expires = new Date(123);
+		String url = "http://synapse.org?param1=one&a=two";
+		
+		URL presignedUrl = UrlSignerUtils.generatePreSignedURL(method, url, expires, credentials);
+		String preUrl = presignedUrl.toString();
+		// change the url
+		preUrl = preUrl.replace("one", "onne");
+		// call under test
+		UrlSignerUtils.validatePresignedURL(method, preUrl, credentials);
+	}
+	
 	@Test (expected=SignatureMismatchException.class)
 	public void testValidatePresignedURLMismatch() throws Exception{
 		HttpMethod method = HttpMethod.GET;
