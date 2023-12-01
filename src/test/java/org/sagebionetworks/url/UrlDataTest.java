@@ -1,12 +1,15 @@
 package org.sagebionetworks.url;
 
-import static org.junit.Assert.*;
+
+import org.junit.jupiter.api.Test;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.LinkedHashMap;
 
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class UrlDataTest {
 
