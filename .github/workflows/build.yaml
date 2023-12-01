@@ -9,7 +9,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 11
@@ -19,4 +18,10 @@ jobs:
           distribution: 'corretto'
           cache: maven
       - name: Build with Maven
+        if: ${{ github.ref != 'refs/heads/develop' }}
         run: mvn clean test
+      - name: deploy
+        if: ${{ github.ref == 'refs/heads/develop' }}
+        run: echo mvn clean deploy
+
+
