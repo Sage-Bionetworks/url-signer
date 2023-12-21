@@ -1,4 +1,4 @@
-name: Java CI with Maven
+name: test and deploy
 
 on:
   push:
@@ -17,11 +17,11 @@ jobs:
           java-version: '11'
           distribution: 'corretto'
           cache: maven
-      - name: Build with Maven
+      - name: test
         if: ${{ github.ref != 'refs/heads/develop' }}
         run: mvn clean test
       - name: deploy
-        if: ${{ github.ref == 'refs/heads/develop' }}
+        if: ${{ github.ref == 'refs/heads/develop' && github.event_name == 'push' }}
         run: echo mvn clean deploy
 
 
