@@ -22,7 +22,7 @@ jobs:
           server-username: MAVEN_USERNAME
           server-password: MAVEN_USERPWD
       - name: deploy
-        run: echo mvn clean deploy
+        run: mvn clean deploy
         env:
           MAVEN_USERNAME: ${{ secrets.ARTIFACTORY_USER }}
           MAVEN_USERPWD: ${{ secrets.ARTIFACTORY_PWD }}
