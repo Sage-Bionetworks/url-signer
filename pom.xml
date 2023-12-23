@@ -111,13 +111,13 @@
 		<repository>
 			<id>sagebionetworks</id>
 			<name>sagebionetworks-releases</name>
-			<url>http://sagebionetworks.jfrog.io/sagebionetworks/libs-releases-local
+			<url>https://sagebionetworks.jfrog.io/sagebionetworks/libs-releases-local
 			</url>
 		</repository>
 		<snapshotRepository>
 			<id>sagebionetworks</id>
 			<name>sagebionetworks-snapshots</name>
-			<url>http://sagebionetworks.jfrog.io/sagebionetworks/libs-snapshots-local
+			<url>https://sagebionetworks.jfrog.io/sagebionetworks/libs-snapshots-local
 			</url>
 			<uniqueVersion>false</uniqueVersion>
 		</snapshotRepository>
