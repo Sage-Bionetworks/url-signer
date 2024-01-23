@@ -1,6 +1,9 @@
 package org.sagebionetworks.url;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import static org.sagebionetworks.url.UrlSignerUtils.*;
 
 import java.net.MalformedURLException;
@@ -8,7 +11,7 @@ import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class UrlSignerUtilsTest {
 
@@ -89,34 +92,40 @@ public class UrlSignerUtilsTest {
 		assertEquals(expectedUrl, presigned.toString());
 	}
 	
-	@Test (expected=IllegalArgumentException.class)
-	public void testGeneratePreSignedURLMethodNull() throws MalformedURLException{
+	@Test
+	public void testGeneratePreSignedURLMethodNull() throws MalformedURLException {
 		HttpMethod method = null;
 		String credentials = "a super secret password";
 		Date expires = new Date(123L);
 		String url = "http://synapse.org?foo.bar";
 		// call under test.
-		UrlSignerUtils.generatePreSignedURL(method, url, expires, credentials);
+		Throwable thrown = assertThrows(IllegalArgumentException.class, () -> {
+			UrlSignerUtils.generatePreSignedURL(method, url, expires, credentials);
+		});
 	}
 	
-	@Test (expected=IllegalArgumentException.class)
+	@Test
 	public void testGeneratePreSignedURLNullURL() throws MalformedURLException{
 		HttpMethod method = HttpMethod.GET;
 		String credentials = "a super secret password";
 		Date expires = new Date(123L);
 		String url = null;
 		// call under test.
-		UrlSignerUtils.generatePreSignedURL(method, url, expires, credentials);
+		Throwable thrown = assertThrows(IllegalArgumentException.class, () -> {
+			UrlSignerUtils.generatePreSignedURL(method, url, expires, credentials);
+		});
 	}
 	
-	@Test (expected=IllegalArgumentException.class)
+	@Test
 	public void testGeneratePreSignedURLCredsNull() throws MalformedURLException{
 		HttpMethod method = HttpMethod.GET;
 		String credentials = null;
 		Date expires = new Date(123L);
 		String url = "http://synapse.org?foo.bar";
 		// call under test.
-		UrlSignerUtils.generatePreSignedURL(method, url, expires, credentials);
+		Throwable thrown = assertThrows(IllegalArgumentException.class, () -> {
+			UrlSignerUtils.generatePreSignedURL(method, url, expires, credentials);
+		});
 	}
 	
 	@Test
@@ -150,23 +159,23 @@ public class UrlSignerUtilsTest {
 		//expired long ago
 		Date expires = new Date(123);
 		String url = "http://synapse.org?param1=one&a=two";
-		
+
 		URL presignedUrl = UrlSignerUtils.generatePreSignedURL(method, url, expires, credentials);
-		// this should be valid
-		try {
+		// call under test
+		Throwable thrown = assertThrows(SignatureExpiredException.class, () -> {
 			UrlSignerUtils.validatePresignedURL(method, presignedUrl.toString(), credentials);
-			fail("Exception should be thrown");
-		} catch (SignatureExpiredException e) {
-			assertEquals(MSG_URL_EXPIRED, e.getMessage());
-			assertEquals("d1f4e8e13dd941010278dd6c973be3510921709f", e.getSignature());
-		}
+		});
+		SignatureExpiredException e = (SignatureExpiredException)thrown;
+		assertEquals(MSG_URL_EXPIRED, e.getMessage());
+		assertEquals("d1f4e8e13dd941010278dd6c973be3510921709f", e.getSignature());
+
 	}
 	
 	/**
 	 * If a URL is expired and mismatched, must throw a SignatureMismatchException and not SignatureExpiredException.
 	 * @throws Exception
 	 */
-	@Test (expected=SignatureMismatchException.class)
+	@Test
 	public void testValidatePresignedURLExpiredAndMismatched() throws Exception{
 		HttpMethod method = HttpMethod.GET;
 		String credentials = "a super secret password";
@@ -175,14 +184,14 @@ public class UrlSignerUtilsTest {
 		String url = "http://synapse.org?param1=one&a=two";
 		
 		URL presignedUrl = UrlSignerUtils.generatePreSignedURL(method, url, expires, credentials);
-		String preUrl = presignedUrl.toString();
-		// change the url
-		preUrl = preUrl.replace("one", "onne");
+		String preUrl = presignedUrl.toString().replace("one", "onne");
 		// call under test
-		UrlSignerUtils.validatePresignedURL(method, preUrl, credentials);
+		Throwable thrown = assertThrows(SignatureMismatchException.class, () -> {
+			UrlSignerUtils.validatePresignedURL(method, preUrl, credentials);
+		});
 	}
 	
-	@Test (expected=SignatureMismatchException.class)
+	@Test
 	public void testValidatePresignedURLMismatch() throws Exception{
 		HttpMethod method = HttpMethod.GET;
 		String credentials = "a super secret password";
@@ -190,15 +199,15 @@ public class UrlSignerUtilsTest {
 		String url = "http://synapse.org?param1=one&a=two";
 		
 		URL presignedUrl = UrlSignerUtils.generatePreSignedURL(method, url, expires, credentials);
-		String preUrl = presignedUrl.toString();
-		// change the url
-		preUrl = preUrl.replace("one", "onne");
+		String preUrl = presignedUrl.toString().replace("one", "onne");
 		// this should be valid
-		UrlSignerUtils.validatePresignedURL(method, preUrl, credentials);
+		Throwable thrown = assertThrows(SignatureMismatchException.class, () -> {
+			UrlSignerUtils.validatePresignedURL(method, preUrl, credentials);
+		});
 	}
 
 	
-	@Test (expected=IllegalArgumentException.class)
+	@Test
 	public void testValidatePresignedURLExpiresFormat() throws Exception {
 		HttpMethod method = HttpMethod.GET;
 		String credentials = "a super secret password";
@@ -206,6 +215,8 @@ public class UrlSignerUtilsTest {
 		String url = "http://synapse.org?"+EXPIRATION+"=notADate";
 		URL presignedUrl = UrlSignerUtils.generatePreSignedURL(method, url, expires, credentials);
 		// this should be valid
-		UrlSignerUtils.validatePresignedURL(method, presignedUrl.toString(), credentials);
+		Throwable thrown = assertThrows(IllegalArgumentException.class, () -> {
+			UrlSignerUtils.validatePresignedURL(method, presignedUrl.toString(), credentials);
+		});
 	}
 }
